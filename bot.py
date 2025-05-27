@@ -7,6 +7,7 @@ import os
 import asyncio
 import yt_dlp
 from telegram import Update, InputFile
+from telegram import BotCommand
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from telegram.constants import ParseMode
 from dotenv import load_dotenv
@@ -51,9 +52,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user = update.effective_user
     welcome_message = (
         f"👋 Hello {user.mention_html()}!\n\n"
-        "I'm your friendly video downloading bot. Send me a link to a video from "
-        "sites like YouTube, Vimeo, Twitter, etc., and I'll try my best to download "
-        "and send it to you.\n\n"
+        "I'm your friendly video downloading bot.\n"
+        "Use the `/download <video_url>` command to fetch a video.\n\n"
+        "Example: `/download https://www.youtube.com/watch?v=your_video_id`\n\n" # Corrected example URL
         "Keep in mind Telegram has a file size limit of about 50MB for bots, "
         "so I'll try to get a version under that size.\n\n"
         "Type /help for more information."
@@ -64,7 +65,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     """Sends a help message when the /help command is issued."""
     help_text = (
         "ℹ️ **How to use me:**\n"
-        "1. Simply send me a direct URL to a video you want to download.\n"
+        "1. Use the `/download` command followed by a direct URL to the video you want to download.\n"
+        "   Example: `/download https://www.example.com/video.mp4`\n"
         "2. I will process the link, download the video, and send it back to you.\n\n"
         "**Supported Sites:**\n"
         "I use `yt-dlp`, which supports hundreds of websites. Common ones include YouTube, "
@@ -77,11 +79,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
     await update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN)
 
-
-# --- Main Video Processing Logic ---
-async def handle_video_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handles messages containing video URLs."""
-    url = update.message.text
+async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str) -> tuple:
     chat_id = update.effective_chat.id
 
     if not url.startswith(('http://', 'https://')):
@@ -102,7 +100,7 @@ async def handle_video_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         ydl_opts = {
             'format': f'bestvideo[ext=mp4][filesize<{MAX_FILE_SIZE_MB}M]+bestaudio[ext=m4a]/best[ext=mp4][filesize<{MAX_FILE_SIZE_MB}M]/best[filesize<{MAX_FILE_SIZE_MB}M]',
             'outtmpl': os.path.join(DOWNLOAD_PATH, '%(title).200B.%(ext)s'), # Limit title length to avoid overly long filenames
-            # 'noplaylist': True, # Download only single video if playlist URL is given
+            'noplaylist': True, # Download only single video if playlist URL is given
             # 'quiet': True, # Suppress yt-dlp console output
             'merge_output_format': 'mp4', # Ensure output is mp4 if merging is needed
             # # 'max_filesize': MAX_FILE_SIZE_MB * 1024 * 1024, # Alternative way to specify max filesize
@@ -111,7 +109,7 @@ async def handle_video_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             #     'preferedformat': 'mp4',
             # }],
             # 'logger': logger, # Send yt-dlp logs to our logger
-            # 'progress_hooks': [lambda d: download_progress_hook(d, update, context, processing_message.message_id)],
+            'progress_hooks': [lambda d: download_progress_hook(d, update, context, processing_message.message_id)],
         }
 
         # Use asyncio.to_thread to run blocking yt-dlp code in a separate thread
@@ -179,7 +177,29 @@ async def handle_video_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 logger.error(f"yt-dlp generic error for URL {url}: {e}")
                 await processing_message.edit_text(f"❌ An error occurred during video processing: {str(e)}")
                 return
+    except:
+        logger.error(f"An overarching unexpected error occurred while downloading URL {url}: {e}", exc_info=True)
+        await processing_message.edit_text("❌ An unexpected error occurred. Please try again later.")
+    return downloaded_file_path, processing_message
 
+
+# --- Main Video Processing Logic ---
+async def download_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handles messages containing video URLs."""
+    chat_id = update.effective_chat.id
+
+    if not context.args:
+        await update.message.reply_text(
+            "⚠️ Please provide a video URL after the /download command.\n"
+            "Example: `/download https://www.youtube.com/watch?v=dQw4w9WgXcQ`", # Corrected example URL
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+
+    url = context.args[0] # The first argument after /download
+
+    try:
+        downloaded_file_path, processing_message = await downloader(update, context, url)
         if downloaded_file_path and os.path.exists(downloaded_file_path):
             file_size = os.path.getsize(downloaded_file_path)
 
@@ -228,19 +248,20 @@ async def handle_video_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
     except Exception as e:
-        logger.error(f"An unexpected error occurred for URL {url}: {e}", exc_info=True)
+        logger.error(f"An overarching unexpected error occurred for URL {url}: {e}", exc_info=True)
         await processing_message.edit_text("❌ An unexpected error occurred. Please try again later.")
     finally:
-        # # Clean up the downloaded file
-        # if downloaded_file_path and os.path.exists(downloaded_file_path):
-        #     try:
-        #         os.remove(downloaded_file_path)
-        #         logger.info(f"Cleaned up downloaded file: {downloaded_file_path}")
-        #     except OSError as e:
-        #         logger.error(f"Error deleting file {downloaded_file_path}: {e}")
+        # Clean up the downloaded file
+        if downloaded_file_path and os.path.exists(downloaded_file_path):
+            try:
+                os.remove(downloaded_file_path)
+                logger.info(f"Cleaned up downloaded file: {downloaded_file_path}")
+            except OSError as e:
+                logger.error(f"Error deleting file {downloaded_file_path}: {e}")
         # Clear any stored filename from chat_data
         context.chat_data.pop(f'download_filename_{chat_id}', None)
         context.chat_data.pop(f'download_error_{chat_id}', None)
+        context.chat_data.pop(f'last_progress_msg_{chat_id}', None)
 
 
 # --- yt-dlp Progress Hook ---
@@ -314,6 +335,15 @@ async def download_progress_hook(d, update: Update, context: ContextTypes.DEFAUL
         except Exception:
             pass # Ignore if editing fails
 
+async def post_init(application: Application) -> None:
+    """Sets the bot's commands after initialization."""
+    commands = [
+        BotCommand("start", "Starts the bot and shows a welcome message."),
+        BotCommand("help", "Shows the help message with instructions."),
+        BotCommand("download", "Downloads a video from a given URL (e.g., /download <URL>).")
+    ]
+    await application.bot.set_my_commands(commands)
+    logger.info("Bot commands have been set programmatically.")
 
 # --- Main Bot Execution ---
 def main() -> None:
@@ -325,14 +355,16 @@ def main() -> None:
     ensure_download_path_exists()
 
     # Create the Application and pass it your bot's token.
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(post_init).build()
 
     # Add command handlers
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("download", download_command_handler)) # New download handler
+
 
     # Add message handler for video URLs (non-command text messages)
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_video_url))
+    # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_video_url))
 
     # Run the bot until the user presses Ctrl-C
     logger.info("Bot starting...")
