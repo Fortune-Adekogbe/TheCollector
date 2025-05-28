@@ -37,3 +37,4 @@ Tasks:
   - Set up docker first. ✅
 - Switch to using a subprocess ✅
 - Fix name extraction from file info
+- get around size limit (https://stackoverflow.com/a/77654947)
