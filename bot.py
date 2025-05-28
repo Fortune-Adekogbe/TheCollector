@@ -31,8 +31,8 @@ MAX_FILE_SIZE_MB = 49  # Telegram's typical bot upload limit is 50MB, stay sligh
 
 # --- !! IMPORTANT !! ---
 # Paths to your Netscape format cookies files.
-YOUTUBE_COOKIES_FILE = "cookies/youtube.txt" # Default: looks for cookies.txt in the script's directory
-INSTAGRAM_COOKIES_FILE = "cookies/instagram.txt" # Default: looks for cookies.txt in the script's directory
+YOUTUBE_COOKIES_FILE = os.getenv("YOUTUBE_COOKIES_FILE_PATH", "/app/cookies/youtube_cookies.txt")
+INSTAGRAM_COOKIES_FILE = os.getenv("INSTAGRAM_COOKIES_FILE_PATH", "/app/cookies/instagram_cookies.txt")
 
 # --- Helper Functions ---
 def ensure_download_path_exists():
