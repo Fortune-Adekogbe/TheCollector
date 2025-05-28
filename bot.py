@@ -4,6 +4,7 @@
 
 import logging
 import os
+import re
 import asyncio
 import yt_dlp
 from telegram import Update, InputFile
@@ -28,6 +29,11 @@ TELEGRAM_BOT_TOKEN = os.getenv("YOUR_TELEGRAM_BOT_TOKEN")  # Replace with your b
 DOWNLOAD_PATH = "video_downloads/"  # Folder to store downloaded videos temporarily
 MAX_FILE_SIZE_MB = 49  # Telegram's typical bot upload limit is 50MB, stay slightly under
 
+# --- !! IMPORTANT !! ---
+# Paths to your Netscape format cookies files.
+YOUTUBE_COOKIES_FILE = "cookies/youtube.txt" # Default: looks for cookies.txt in the script's directory
+INSTAGRAM_COOKIES_FILE = "cookies/instagram.txt" # Default: looks for cookies.txt in the script's directory
+
 # --- Helper Functions ---
 def ensure_download_path_exists():
     """Creates the download directory if it doesn't exist."""
@@ -50,6 +56,19 @@ def is_time_like(text: str) -> bool:
     if not text:
         return False
     return ':' in text or text.isdigit()
+
+def is_youtube_url(url: str) -> bool:
+    """Checks if the URL is a YouTube URL."""
+    youtube_regex = (
+        r'(https?://)?(www\.)?'
+        '(youtube|youtu|youtube-nocookie)\.(com|be)/'
+        '(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})')
+    return bool(re.match(youtube_regex, url))
+
+def is_instagram_url(url: str) -> bool:
+    """Checks if the URL is an Instagram URL."""
+    instagram_regex = r'(https?://)?(www\.)?instagram\.com/(p|reel|tv)/([^/?#&]+)'
+    return bool(re.match(instagram_regex, url))
 
 # --- Bot Command Handlers ---
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -134,6 +153,26 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, url: st
             # 'verbose': True
         }
 
+        # Add cookies based on URL
+        if is_youtube_url(url):
+            if YOUTUBE_COOKIES_FILE and os.path.exists(YOUTUBE_COOKIES_FILE):
+                ydl_opts['cookies'] = YOUTUBE_COOKIES_FILE
+                logger.info(f"Using YouTube cookies file: {YOUTUBE_COOKIES_FILE}")
+            else:
+                logger.warning(f"YouTube URL detected, but YouTube cookies file not found or not configured: {YOUTUBE_COOKIES_FILE}")
+        elif is_instagram_url(url):
+            if INSTAGRAM_COOKIES_FILE and os.path.exists(INSTAGRAM_COOKIES_FILE):
+                ydl_opts['cookies'] = INSTAGRAM_COOKIES_FILE
+                logger.info(f"Using Instagram cookies file: {INSTAGRAM_COOKIES_FILE}")
+            else:
+                logger.warning(f"Instagram URL detected, but Instagram cookies file not found or not configured: {INSTAGRAM_COOKIES_FILE}")
+                
+        else: # Full video download
+            if 'recodevideo' not in ydl_opts: # Only add if not already recoding (e.g. for segments)
+                 ydl_opts['postprocessors'] = [{'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'}]
+            logger.info(f"Full video download requested for {url}")
+            # user_feedback_time_segment = " (full video)"
+        
         # Use asyncio.to_thread to run blocking yt-dlp code in a separate thread
         # This prevents the bot from freezing during download.
         loop = asyncio.get_event_loop()
@@ -218,6 +257,10 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, url: st
 async def download_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handles messages containing video URLs."""
     chat_id = update.effective_chat.id
+    if not context.args:
+        await update.message.reply_text("⚠️ URL missing. Usage: /download <URL> [start] [end]"); return
+
+    url = context.args[0]
 
     if not context.args:
         await update.message.reply_text(
@@ -402,6 +445,16 @@ def main() -> None:
     if TELEGRAM_BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
         logger.error("CRITICAL: Bot token is not set! Please replace 'YOUR_TELEGRAM_BOT_TOKEN' with your actual bot token.")
         return
+    
+    if YOUTUBE_COOKIES_FILE and not os.path.exists(YOUTUBE_COOKIES_FILE): # Check if configured AND not found
+        logger.warning(f"YouTube cookies file configured but not found at '{YOUTUBE_COOKIES_FILE}'. YouTube downloads might fail.")
+    elif YOUTUBE_COOKIES_FILE and os.path.exists(YOUTUBE_COOKIES_FILE):
+        logger.info(f"YouTube cookies file found at '{YOUTUBE_COOKIES_FILE}'. Will be used for YouTube URLs.")
+
+    if INSTAGRAM_COOKIES_FILE and not os.path.exists(INSTAGRAM_COOKIES_FILE): # Check if configured AND not found
+        logger.warning(f"Instagram cookies file configured but not found at '{INSTAGRAM_COOKIES_FILE}'. Instagram downloads might fail.")
+    elif INSTAGRAM_COOKIES_FILE and os.path.exists(INSTAGRAM_COOKIES_FILE):
+        logger.info(f"Instagram cookies file found at '{INSTAGRAM_COOKIES_FILE}'. Will be used for Instagram URLs.")
 
     ensure_download_path_exists()
 
