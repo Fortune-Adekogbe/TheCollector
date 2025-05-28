@@ -1,3 +1,15 @@
+---
+title: The Collector
+emoji: 🔥
+colorFrom: gray
+colorTo: red
+sdk: gradio
+sdkVersion: "5.31.0"
+app_file: app.py
+pinned: true
+license: mit
+---
+
 # TheCollector
 
 A Telegram Bot that downloads videos or video segments using yt-dlp.
