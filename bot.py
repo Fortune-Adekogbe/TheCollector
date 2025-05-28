@@ -155,6 +155,7 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, url: st
 
         # Add cookies based on URL
         if is_youtube_url(url):
+            print("here")
             if YOUTUBE_COOKIES_FILE and os.path.exists(YOUTUBE_COOKIES_FILE):
                 ydl_opts['cookies'] = YOUTUBE_COOKIES_FILE
                 logger.info(f"Using YouTube cookies file: {YOUTUBE_COOKIES_FILE}")
