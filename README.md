@@ -1,7 +1,5 @@
 # TheCollector
 
-A Telegram Bot that downloads videos using yt-dlp and sends them back to the user.
-
 A Telegram Bot that downloads videos or video segments using yt-dlp.
 
 Usage:
