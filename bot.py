@@ -110,8 +110,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
     await update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN)
 
-async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str,
-                     start_time_str: str, end_time_str: str) -> tuple:
+async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str) -> tuple:
     chat_id = update.effective_chat.id
 
     if not url.startswith(('http://', 'https://')):
@@ -292,7 +291,7 @@ async def download_command_handler(update: Update, context: ContextTypes.DEFAULT
         else:
             await update.message.reply_text(f"⚠️ '{potential_end_time}' doesn't look like a valid end time. Will download from {start_time_str} to end if applicable.")
 
-    downloaded_file_path, processing_message = await downloader(update, context, url, start_time_str, end_time_str)
+    downloaded_file_path, processing_message = await downloader(update, context, url)
 
     try:
         if downloaded_file_path and os.path.exists(downloaded_file_path):
