@@ -34,5 +34,6 @@ Notes:
 
 Tasks:
 - Deployment 
-  - Set up docker first.
-- Switch to using a subprocess
+  - Set up docker first. ✅
+- Switch to using a subprocess ✅
+- Fix name extraction from file info
