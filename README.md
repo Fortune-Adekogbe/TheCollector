@@ -36,5 +36,6 @@ Tasks:
 - Deployment 
   - Set up docker first. ✅
 - Switch to using a subprocess ✅
+- Test to see which argument for constraining size works for youtube videos.
 - Fix name extraction from file info
 - get around size limit (https://stackoverflow.com/a/77654947)
