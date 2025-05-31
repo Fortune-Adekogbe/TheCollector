@@ -31,8 +31,8 @@ MAX_FILE_SIZE_MB = 49  # Telegram's typical bot upload limit is 50MB, stay sligh
 
 # --- !! IMPORTANT !! ---
 # Paths to your Netscape format cookies files.
-YOUTUBE_COOKIES_FILE = os.getenv("YOUTUBE_COOKIES_FILE_PATH", "/app/cookies/youtube_cookies.txt")
-INSTAGRAM_COOKIES_FILE = os.getenv("INSTAGRAM_COOKIES_FILE_PATH", "/app/cookies/instagram_cookies.txt")
+YOUTUBE_COOKIES_FILE="cookies/youtube.txt"
+INSTAGRAM_COOKIES_FILE="cookies/instagram.txt"
 
 # --- Helper Functions ---
 def ensure_download_path_exists():
@@ -162,6 +162,7 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, url: st
                 logger.warning(f"YouTube URL detected, but YouTube cookies file not found or not configured: {YOUTUBE_COOKIES_FILE}")
         elif is_instagram_url(url):
             if INSTAGRAM_COOKIES_FILE and os.path.exists(INSTAGRAM_COOKIES_FILE):
+                del ydl_opts['format'] # TEMP FIX FOR INSTAGRAM DOWNLOAD ISSUE.
                 ydl_opts['cookies'] = INSTAGRAM_COOKIES_FILE
                 logger.info(f"Using Instagram cookies file: {INSTAGRAM_COOKIES_FILE}")
             else:
