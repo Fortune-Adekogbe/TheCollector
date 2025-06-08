@@ -176,4 +176,8 @@ cython_debug/
 # Media
 *.mp4
 
+# Test
 test*
+
+# telethon sessions
+*session*
