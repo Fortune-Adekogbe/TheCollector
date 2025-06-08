@@ -1,7 +1,7 @@
 # Dockerfile
 
 # Use an official Python runtime as a parent image
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Install system dependencies
 # - ffmpeg is crucial for yt-dlp for merging formats and segment downloads
-# - git is sometimes needed by yt-dlp for updates or certain extractors (optional but good to have)
+# - git is sometimes needed by yt-dlp for updates or certain extractors (good to have)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ffmpeg \
@@ -34,17 +34,16 @@ COPY . .
 # COPY telegram_ytdlp_bot.py .
 # COPY any_other_helper_files_if_any .
 
-# Expose a volume for downloads (optional, but good for persisting data)
+# Expose a volume for downloads (but good for persisting data)
 # The bot script currently uses "video_downloads/" relative to its execution path.
 # So, /app/video_downloads/ will be the path inside the container.
 VOLUME /app/video_downloads
 
-# Expose a volume for cookies (optional, for easier management)
+# Expose a volume for cookies (for easier management)
 VOLUME /app/cookies
 
 # Define environment variables for configuration (these will be set at runtime)
 # You can set defaults here, but it's better to pass them during `docker run`
-ENV TELEGRAM_BOT_TOKEN=""
 ENV YOUTUBE_COOKIES_FILE_PATH="/app/cookies/youtube.txt"
 ENV INSTAGRAM_COOKIES_FILE_PATH="/app/cookies/instagram.txt"
 # The bot script will need to be updated to use these _FILE_PATH variables
