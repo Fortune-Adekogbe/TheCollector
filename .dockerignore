@@ -1,5 +1,5 @@
 # Environments
-.env
+# .env # remove later and figure out docker env issues.
 .venv
 env/
 venv/
