@@ -27,15 +27,18 @@ Usage:
    (Time format: HH:MM:SS or MM:SS)
 
 Notes:
-- Telegram has a file size limit for bots sending files (usually 50MB).
-  This bot attempts to download a suitable format but might fail for very large videos.
+- Telegram has a file size limit for bots sending files (usually 50MB) but this works around that.
+  This bot attempts to download a suitable format but might fail for extremely large videos.
 - Ensure ffmpeg is installed if yt-dlp requires it for merging formats or conversions.
   (yt-dlp often bundles it or can use a system-wide ffmpeg).
 
 Tasks:
 - Deployment 
   - Set up docker first. ✅
+  - Deploy to the cloud
 - Switch to using a subprocess ✅
 - Test to see which argument for constraining size works for youtube videos. 🗑️
 - Fix name extraction from file info
 - get around size limit (https://stackoverflow.com/a/77654947) ✅
+- confirm that timestamped URLs do not break the bot
+- integrate [cobalt](https://github.com/imputnet/cobalt) as a fall back for short video download. Maybe replax instagram download altogether with it.
