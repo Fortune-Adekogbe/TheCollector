@@ -133,7 +133,7 @@ def _download_progress_hook_sync(d, chat_id, initial_message_id_obj, client_ref,
     elif d['status'] == 'error':
         logger.error(f"yt-dlp reported an error for chat {chat_id}.")
         current_chat_data['download_error'] = True
-        asyncio.run_coroutine_threadsafe(edit_message_async("❌ yt-dlp encountered an error during download."), loop_ref)
+        asyncio.run_coroutine_threadsafe(edit_message_async("❌ yt-dlp encountered an error during download. Try https://cobalt.tools/."), loop_ref)
 
 
 async def downloader_segment(event: events.NewMessage.Event, url: str,
@@ -312,9 +312,10 @@ async def help_command_handler(event: events.NewMessage.Event):
         "Use `0` or `00:00` for the beginning if specifying an end time only (e.g. `/download <url> 0 00:55`).\n\n"
         "**Supported Sites:**\n"
         "Most sites supported by `yt-dlp` (YouTube, Vimeo, Twitter, etc.).\n\n"
-        "**File Size Limit:**\n"
-        "Telegram bots can only send files up to ~50MB. I'll try to get a version under this. "
-        "Segments are more likely to fit!"
+        "🚩 If bot seems to be failing for no reason, yt-dlp may just need an update."
+        # "**File Size Limit:**\n"
+        # "Telegram bots can only send files up to ~50MB. I'll try to get a version under this. "
+        # "Segments are more likely to fit!"
     )
     await event.reply(help_text, parse_mode='md')
 
