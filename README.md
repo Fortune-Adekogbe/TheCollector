@@ -41,4 +41,4 @@ Tasks:
 - Fix name extraction from file info
 - get around size limit (https://stackoverflow.com/a/77654947) ✅
 - confirm that timestamped URLs do not break the bot
-- integrate [cobalt](https://github.com/imputnet/cobalt) as a fall back for short video download. Maybe replax instagram download altogether with it.
+- integrate [cobalt](https://github.com/imputnet/cobalt) as a fall back for short video download. Maybe replace instagram download altogether with it.
